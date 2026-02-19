@@ -1,7 +1,7 @@
 {
-  "name": "aceites-tapia-horeca-repartidor",
+  "name": "aceites-tapia-horeca-cliente",
   "version": "1.0.0",
-  "description": "Panel del Repartidor HORECA - Aceites Tapia",
+  "description": "Portal de Pedidos HORECA - Aceites Tapia (Vista Cliente)",
   "private": true,
   "type": "module",
   "scripts": {
