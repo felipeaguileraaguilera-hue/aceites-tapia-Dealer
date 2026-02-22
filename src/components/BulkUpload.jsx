@@ -39,11 +39,11 @@ const TABLES = [
     backupTable: 'delivery_points',
   },
   {
-    id: 'products', label: 'Productos', icon: '📦', desc: 'Catálogo con precios base',
-    columns: ['Código', 'Nombre', 'Descripción', 'Sección', 'Precio base (sin IVA)', 'IVA (%)', 'URL imagen', 'Orden', 'Activo'],
+    id: 'products', label: 'Productos', icon: '📦', desc: 'Catálogo con precios base y datos de volumen',
+    columns: ['Código', 'Nombre', 'Descripción', 'Sección', 'Precio base (sin IVA)', 'IVA (%)', 'Ud/caja', 'ml/unidad', 'URL imagen', 'Orden', 'Activo'],
     mapRow: (r) => ({
       code: r[0], name: r[1], description: r[2], section: r[3], base_price: r[4],
-      vat_pct: r[5], image_url: r[6], display_order: r[7], active: r[8],
+      vat_pct: r[5], units_per_box: r[6], ml_per_unit: r[7], image_url: r[8], display_order: r[9], active: r[10],
     }),
     required: ['code', 'name'],
     upload: (rows) => api.bulkUpsertProducts(rows),

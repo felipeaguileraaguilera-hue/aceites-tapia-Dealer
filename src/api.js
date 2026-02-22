@@ -467,6 +467,8 @@ export async function bulkUpsertProducts(rows) {
       vat_rate: r.vat_pct ? parseFloat(r.vat_pct) / 100 : 0.04,
       image_url: r.image_url || '', display_order: parseInt(r.display_order) || 0,
       active: String(r.active).toUpperCase() !== 'NO',
+      units_per_box: parseInt(r.units_per_box) || 1,
+      ml_per_unit: parseInt(r.ml_per_unit) || 0,
     }
     const { data: existing } = await supabase.from('products').select('id').eq('id', r.code).maybeSingle()
     let res

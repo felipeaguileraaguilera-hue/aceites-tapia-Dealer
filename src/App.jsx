@@ -5,6 +5,7 @@ import ClientManager from './components/ClientManager';
 import CreateOrder from './components/CreateOrder';
 import AdminPanel from './components/AdminPanel';
 import DeliveryRound from './components/DeliveryRound';
+import LoadDocument from './components/LoadDocument';
 import './styles.css';
 
 if (!document.querySelector('link[data-rep-font]')) {
@@ -252,7 +253,8 @@ export default function App() {
           <button className={"nb " + (tab==="entregados"?"on":"")} onClick={() => setTab("entregados")}>Entregados{deliveredOrders.length>0 && <span className="bdg bdg-g">{deliveredOrders.length}</span>}</button>
           <button className={"nb " + (tab==="nuevo"?"on":"")} onClick={() => setTab("nuevo")}>+ Pedido</button>
           <button className={"nb " + (tab==="ronda"?"on":"")} onClick={() => setTab("ronda")}>📞 Ronda</button>
-          <button className={"nb " + (tab==="clientes"?"on":"")} onClick={() => setTab("clientes")}>{"\u{1F465}"} Clientes</button>
+          <button className={"nb " + (tab==="carga"?"on":"")} onClick={() => setTab("carga")}>🚚 Carga</button>
+          <button className={"nb " + (tab===="clientes"?"on":"")} onClick={() => setTab("clientes")}>{"\u{1F465}"} Clientes</button>
           {isAdmin && <button className={"nb " + (tab==="admin"?"on":"")} onClick={() => setTab("admin")}>{"\u2699\uFE0F"} Admin</button>}
         </div>
       </div>
@@ -273,6 +275,8 @@ export default function App() {
         {tab === "nuevo" && <CreateOrder catalog={catalog} onDone={() => { setTab("pendientes"); loadOrders(); }} />}
 
         {tab === "ronda" && <DeliveryRound catalog={catalog} driverProfile={driverProfile} />}
+
+        {tab === "carga" && <LoadDocument catalog={catalog} />}
 
         {tab === "clientes" && <ClientManager isAdmin={isAdmin} />}
 
