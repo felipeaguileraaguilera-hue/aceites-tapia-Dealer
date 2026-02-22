@@ -272,7 +272,7 @@ export default function App() {
 
         {tab === "clientes" && <ClientManager isAdmin={isAdmin} />}
 
-        {tab === "admin" && isAdmin && <AdminPanel />}
+        {tab === "admin" && isAdmin && <AdminPanel driverProfile={driverProfile} />}
       </div>
 
       <AddProductModal open={showAddModal!==null} onClose={() => setShowAddModal(null)} catalog={catalog} onAdd={(pid) => handleAddProduct(showAddModal, pid)} existingIds={(editItems[showAddModal]||[]).map(i => i.productId)} />

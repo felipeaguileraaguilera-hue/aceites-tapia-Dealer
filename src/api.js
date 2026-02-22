@@ -368,3 +368,172 @@ export async function upsertDistributorPrice(productId, price) {
   return { data, error }
 }
 
+// ============================================================
+// ADMIN: BULK UPLOAD (table-level operations)
+// ============================================================
+export async function bulkUpsertZones(rows) {
+  const results = { success: 0, errors: [] }
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i]
+    if (!r.name) { results.errors.push({ row: i + 1, error: 'Nombre obligatorio' }); continue }
+    if (!r.delivery_day) { results.errors.push({ row: i + 1, error: 'Día de reparto obligatorio' }); continue }
+    const data = {
+      name: r.name, description: r.description || '',
+      delivery_day: r.delivery_day.toLowerCase().trim(),
+      postal_codes: r.postal_codes ? String(r.postal_codes).split(',').map(s => s.trim()).filter(Boolean) : [],
+      route_order: parseInt(r.route_order) || 0,
+    }
+    if (r.code) data.code = r.code
+    // Upsert by code if provided, else insert
+    let res
+    if (r.code) {
+      const { data: existing } = await supabase.from('zones').select('id').eq('code', r.code).maybeSingle()
+      if (existing) res = await supabase.from('zones').update(data).eq('id', existing.id)
+      else res = await supabase.from('zones').insert(data)
+    } else {
+      res = await supabase.from('zones').insert(data)
+    }
+    if (res.error) results.errors.push({ row: i + 1, error: res.error.message })
+    else results.success++
+  }
+  return results
+}
+
+export async function bulkUpsertClients(rows, zones) {
+  const results = { success: 0, errors: [] }
+  const zoneMap = {}
+  zones.forEach(z => { if (z.code) zoneMap[z.code.toUpperCase()] = z.id })
+
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i]
+    if (!r.cif_nif) { results.errors.push({ row: i + 1, error: 'CIF/NIF obligatorio' }); continue }
+    if (!r.name) { results.errors.push({ row: i + 1, error: 'Nombre obligatorio' }); continue }
+    const zoneId = r.zone_code ? zoneMap[String(r.zone_code).toUpperCase()] : null
+    if (r.zone_code && !zoneId) { results.errors.push({ row: i + 1, error: `Zona '${r.zone_code}' no encontrada` }); continue }
+    const data = {
+      name: r.name, cif_nif: String(r.cif_nif).toUpperCase(),
+      fiscal_name: r.fiscal_name || '', contact_person: r.contact_person || '',
+      phone: r.phone ? String(r.phone) : '', email: r.email || '', address: r.address || '',
+      fiscal_address: r.fiscal_address || '', fiscal_city: r.fiscal_city || '',
+      fiscal_postal_code: r.fiscal_postal_code ? String(r.fiscal_postal_code) : '',
+      fiscal_province: r.fiscal_province || '',
+      client_type: ['restauracion','comercio_minorista','colaborador'].includes(r.client_type) ? r.client_type : 'restauracion',
+      client_subtype: r.client_subtype || '',
+      delivery_frequency: ['semanal','quincenal','mensual'].includes(r.delivery_frequency) ? r.delivery_frequency : 'semanal',
+      alprivawin_code: r.alprivawin_code || '', notes_admin: r.notes || '',
+      role: 'client', price_level_id: 'silver', is_active: true,
+    }
+    if (zoneId) data.zone_id = zoneId
+    // Upsert by cif_nif
+    const { data: existing } = await supabase.from('clients').select('id').eq('cif_nif', data.cif_nif).maybeSingle()
+    let res
+    if (existing) res = await supabase.from('clients').update(data).eq('id', existing.id)
+    else res = await supabase.from('clients').insert(data)
+    if (res.error) results.errors.push({ row: i + 1, error: res.error.message })
+    else results.success++
+  }
+  return results
+}
+
+export async function bulkUpsertDeliveryPoints(rows) {
+  const results = { success: 0, errors: [] }
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i]
+    if (!r.cif_nif) { results.errors.push({ row: i + 1, error: 'CIF/NIF obligatorio' }); continue }
+    if (!r.name || !r.address) { results.errors.push({ row: i + 1, error: 'Nombre y dirección obligatorios' }); continue }
+    const { data: client } = await supabase.from('clients').select('id').eq('cif_nif', String(r.cif_nif).toUpperCase()).maybeSingle()
+    if (!client) { results.errors.push({ row: i + 1, error: `Cliente con CIF '${r.cif_nif}' no encontrado` }); continue }
+    const res = await supabase.from('delivery_points').insert({
+      client_id: client.id, name: r.name, address: r.address,
+      city: r.city || '', postal_code: r.postal_code ? String(r.postal_code) : '',
+      contact_person: r.contact_person || '', phone: r.phone ? String(r.phone) : '',
+      is_default: String(r.is_default).toUpperCase() === 'SI',
+      is_fiscal_address: String(r.is_fiscal).toUpperCase() === 'SI',
+    })
+    if (res.error) results.errors.push({ row: i + 1, error: res.error.message })
+    else results.success++
+  }
+  return results
+}
+
+export async function bulkUpsertProducts(rows) {
+  const results = { success: 0, errors: [] }
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i]
+    if (!r.code || !r.name) { results.errors.push({ row: i + 1, error: 'Código y nombre obligatorios' }); continue }
+    const data = {
+      name: r.name, description: r.description || '', section: r.section || '',
+      base_price: parseFloat(r.base_price) || 0,
+      vat_rate: r.vat_pct ? parseFloat(r.vat_pct) / 100 : 0.04,
+      image_url: r.image_url || '', display_order: parseInt(r.display_order) || 0,
+      active: String(r.active).toUpperCase() !== 'NO',
+    }
+    const { data: existing } = await supabase.from('products').select('id').eq('id', r.code).maybeSingle()
+    let res
+    if (existing) res = await supabase.from('products').update(data).eq('id', r.code)
+    else res = await supabase.from('products').insert({ id: r.code, ...data })
+    if (res.error) results.errors.push({ row: i + 1, error: res.error.message })
+    else results.success++
+  }
+  return results
+}
+
+export async function bulkUpsertPriceLevels(rows) {
+  const results = { success: 0, errors: [] }
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i]
+    if (!r.code || !r.name) { results.errors.push({ row: i + 1, error: 'Código y nombre obligatorios' }); continue }
+    const data = { name: r.name, discount_pct: parseFloat(r.discount_pct) || 0, description: r.description || '', sort_order: parseInt(r.sort_order) || 0 }
+    const { data: existing } = await supabase.from('price_levels').select('id').eq('id', r.code).maybeSingle()
+    let res
+    if (existing) res = await supabase.from('price_levels').update(data).eq('id', r.code)
+    else res = await supabase.from('price_levels').insert({ id: r.code, ...data })
+    if (res.error) results.errors.push({ row: i + 1, error: res.error.message })
+    else results.success++
+  }
+  return results
+}
+
+export async function bulkUpsertDistributorPrices(rows) {
+  const results = { success: 0, errors: [] }
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i]
+    if (!r.product_code || !r.price) { results.errors.push({ row: i + 1, error: 'Código producto y precio obligatorios' }); continue }
+    const res = await supabase.from('distributor_prices')
+      .upsert({ product_id: r.product_code, price: parseFloat(r.price) || 0 }, { onConflict: 'product_id' })
+    if (res.error) results.errors.push({ row: i + 1, error: res.error.message })
+    else results.success++
+  }
+  return results
+}
+
+export async function bulkUpsertVolumeTiers(rows) {
+  await supabase.from('volume_discount_tiers').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+  const results = { success: 0, errors: [] }
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i]
+    if (r.min_amount === undefined) { results.errors.push({ row: i + 1, error: 'Desde obligatorio' }); continue }
+    const res = await supabase.from('volume_discount_tiers').insert({
+      min_amount: parseFloat(r.min_amount) || 0,
+      max_amount: r.max_amount ? parseFloat(r.max_amount) : null,
+      extra_discount_pct: parseFloat(r.extra_discount_pct) || 0,
+      suggested_level: r.suggested_level || null,
+    })
+    if (res.error) results.errors.push({ row: i + 1, error: res.error.message })
+    else results.success++
+  }
+  return results
+}
+
+// Backup: get all data from a table
+export async function getTableBackup(tableName) {
+  const { data } = await supabase.from(tableName).select('*')
+  return data || []
+}
+
+// Log bulk upload
+export async function logBulkUpload(entry) {
+  return await supabase.from('bulk_uploads').insert(entry)
+}
+
+
