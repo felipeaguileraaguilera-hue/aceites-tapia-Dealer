@@ -9,8 +9,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--cr);color:var(--tx);-webk
 .logo-t{font-family:'Playfair Display',serif;font-size:15px;color:#fff}
 .logo-s{font-size:8px;color:var(--b3);letter-spacing:2.5px;text-transform:uppercase;font-weight:500}
 .driver-name{font-size:11px;color:var(--b2);background:rgba(255,255,255,.08);padding:4px 10px;border-radius:14px;cursor:pointer;border:none;font-family:'DM Sans',sans-serif}
-.nav{display:flex;gap:2px;background:rgba(0,0,0,.2);border-radius:8px;padding:2px}
-.nb{flex:1;padding:6px 3px;text-align:center;font-size:10.5px;font-weight:500;color:var(--b3);border:none;background:0;border-radius:6px;cursor:pointer;transition:.2s;white-space:nowrap;font-family:'DM Sans',sans-serif}
+.nav{display:flex;gap:2px;background:rgba(0,0,0,.2);border-radius:8px;padding:2px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.nav::-webkit-scrollbar{display:none}
+.nb{flex:0 0 auto;padding:6px 8px;text-align:center;font-size:10px;font-weight:500;color:var(--b3);border:none;background:0;border-radius:6px;cursor:pointer;transition:.2s;white-space:nowrap;font-family:'DM Sans',sans-serif}
 .nb.on{background:#fff;color:var(--b8);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.08)}
 .bdg{display:inline-flex;align-items:center;justify-content:center;min-width:15px;height:15px;padding:0 4px;border-radius:8px;background:var(--or);color:#fff;font-size:8px;font-weight:700;margin-left:3px}
 .bdg-g{background:var(--b5)}

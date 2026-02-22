@@ -536,4 +536,49 @@ export async function logBulkUpload(entry) {
   return await supabase.from('bulk_uploads').insert(entry)
 }
 
+// ============================================================
+// DELIVERY ROUND & CALL LOG
+// ============================================================
+export async function getDeliveryRound(day) {
+  const { data, error } = await supabase.rpc('get_delivery_round', { p_day: day })
+  return { data, error }
+}
+
+export async function logCall(clientId, driverId, result, orderId, notes) {
+  const { data, error } = await supabase.from('call_log').insert({
+    client_id: clientId,
+    driver_id: driverId || null,
+    call_date: new Date().toISOString().split('T')[0],
+    result,
+    order_id: orderId || null,
+    notes: notes || '',
+  })
+  return { data, error }
+}
+
+export async function getCallReport(filters) {
+  let query = supabase.from('call_log')
+    .select(`*, clients!call_log_client_id_fkey(name, phone, zone_id, zones(name))`)
+    .order('call_time', { ascending: false })
+    .limit(200)
+
+  if (filters.result) query = query.eq('result', filters.result)
+  if (filters.dateFrom) query = query.gte('call_date', filters.dateFrom)
+  if (filters.dateTo) query = query.lte('call_date', filters.dateTo)
+
+  const { data, error } = await query
+  if (error) return { data: [], error }
+
+  // Post-filter by zone if needed
+  let results = (data || []).map(r => ({
+    ...r,
+    client_name: r.clients?.name || '—',
+    zone_name: r.clients?.zones?.name || '',
+    zone_id: r.clients?.zone_id || null,
+  }))
+  if (filters.zone_id) results = results.filter(r => r.zone_id === filters.zone_id)
+
+  return { data: results, error: null }
+}
+
 
